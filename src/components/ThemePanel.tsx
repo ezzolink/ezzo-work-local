@@ -3,7 +3,6 @@ import { useTheme } from '../hooks/useTheme'
 import { useUpdate } from '../hooks/useUpdate'
 import UpdateModal from './UpdateModal'
 
-const VERSION = '1.0.3'
 const BUILD_DATE = '2026-06-25'
 
 const IconMoon = () => (
@@ -225,7 +224,7 @@ export default function ThemePanel() {
                 fontSize: 10, fontFamily: 'var(--font-mono)',
                 background: 'var(--bg-active)', color: 'var(--accent)',
                 padding: '2px 8px', borderRadius: 10,
-              }}>v{VERSION}</span>
+              }}>v{update?.current ?? '1.0.5'}</span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Build: {BUILD_DATE}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Electron + React + TypeScript</div>
