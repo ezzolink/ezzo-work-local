@@ -22,8 +22,13 @@ export function useUpdate() {
     setChecking(false)
   }
 
-  // Auto-check on mount (once)
-  useEffect(() => { check() }, []) // eslint-disable-line
+  useEffect(() => {
+    // Check on mount
+    check()
+    // Check every 30 minutes in background
+    const interval = setInterval(check, 30 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, []) // eslint-disable-line
 
   return { update, checking, check }
 }
