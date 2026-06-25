@@ -1,7 +1,7 @@
 # EZZO Work Local
 
 <div align="center">
-  <img src="assets/ezzo-work-local-azul.png" alt="EZZO Work Local" height="60" />
+  <img src="assets/logo-ezzo-work-local-dev.png" alt="EZZO Work Local" height="80" />
 
   <br />
   <br />
