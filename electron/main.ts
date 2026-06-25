@@ -417,7 +417,7 @@ ipcMain.handle('git-pull', (_e, root: string) => {
 
 // ── Auto Update ───────────────────────────────────────────────────────────────
 const CURRENT_VERSION = app.getVersion() || '1.0.0'
-const UPDATE_URL = 'https://api.github.com/repos/ezzo-dev/ezzo-work-local/releases/latest'
+const UPDATE_URL = 'https://api.github.com/repos/ezzolink/ezzo-work-local/releases/latest'
 
 function httpsGet(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
