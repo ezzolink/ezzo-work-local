@@ -81,4 +81,7 @@ contextBridge.exposeInMainWorld('api', {
   // Update
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   openUpdateUrl: (url: string) => ipcRenderer.send('open-update-url', url),
+  downloadUpdate: (url: string) => ipcRenderer.invoke('download-update', url),
+  installUpdate: (exePath: string) => ipcRenderer.invoke('install-update', exePath),
+  onUpdateProgress: (cb: (pct: number) => void) => ipcRenderer.on('update-progress', (_e, pct) => cb(pct)),
 })

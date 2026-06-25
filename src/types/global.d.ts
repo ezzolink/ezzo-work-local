@@ -63,6 +63,9 @@ declare global {
       // Update
       checkUpdate?: () => Promise<{ hasUpdate: boolean; current: string; latest: string; notes: string; url: string; assets: { name: string; browser_download_url: string; size: number }[] }>
       openUpdateUrl?: (url: string) => void
+      downloadUpdate?: (url: string) => Promise<{ ok: boolean; path?: string; error?: string }>
+      installUpdate?: (exePath: string) => Promise<void>
+      onUpdateProgress?: (cb: (pct: number) => void) => void
     }
   }
 }

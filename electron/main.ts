@@ -485,6 +485,52 @@ ipcMain.on('open-update-url', (_e, url: string) => {
   shell.openExternal(url)
 })
 
+// ── Download & install update ─────────────────────────────────────────────────
+ipcMain.handle('download-update', async (_e, url: string) => {
+  const tmpPath = path.join(os.tmpdir(), 'ezzo-update-setup.exe')
+
+  return new Promise<{ ok: boolean; path?: string; error?: string }>((resolve) => {
+    const file = fs.createWriteStream(tmpPath)
+
+    const request = https.get(url, { headers: { 'User-Agent': 'EZZO-Work-Local' } }, (res) => {
+      // Follow redirect
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        file.close()
+        ipcMain.emit('download-update', _e, res.headers.location!)
+        https.get(res.headers.location!, { headers: { 'User-Agent': 'EZZO-Work-Local' } }, (res2) => {
+          const total = parseInt(res2.headers['content-length'] ?? '0', 10)
+          let downloaded = 0
+          res2.pipe(file)
+          res2.on('data', (chunk: Buffer) => {
+            downloaded += chunk.length
+            if (total > 0) mainWindow?.webContents.send('update-progress', Math.round((downloaded / total) * 100))
+          })
+          file.on('finish', () => { file.close(); resolve({ ok: true, path: tmpPath }) })
+          res2.on('error', (e) => resolve({ ok: false, error: e.message }))
+        }).on('error', (e) => resolve({ ok: false, error: e.message }))
+        return
+      }
+
+      const total = parseInt(res.headers['content-length'] ?? '0', 10)
+      let downloaded = 0
+      res.pipe(file)
+      res.on('data', (chunk: Buffer) => {
+        downloaded += chunk.length
+        if (total > 0) mainWindow?.webContents.send('update-progress', Math.round((downloaded / total) * 100))
+      })
+      file.on('finish', () => { file.close(); resolve({ ok: true, path: tmpPath }) })
+      res.on('error', (e) => resolve({ ok: false, error: e.message }))
+    })
+
+    request.on('error', (e) => resolve({ ok: false, error: e.message }))
+  })
+})
+
+ipcMain.handle('install-update', (_e, exePath: string) => {
+  shell.openPath(exePath)
+  setTimeout(() => app.quit(), 1000)
+})
+
 // ── Open in VS Code ───────────────────────────────────────────────────────────
 ipcMain.on('open-in-vscode', (_e, filePath: string) => {
   shell.openExternal(`vscode://file/${filePath}`).catch(() => {
