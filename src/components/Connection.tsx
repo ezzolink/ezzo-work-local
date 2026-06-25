@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-function markRemote(node: FileNode): FileNode {
+export function markRemote(node: FileNode): FileNode {
   return {
     ...node,
     remote: true,

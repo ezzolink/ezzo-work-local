@@ -6,6 +6,7 @@ import FileExplorer from './components/FileExplorer'
 import SearchPanel from './components/SearchPanel'
 import GitPanel from './components/GitPanel'
 import Connection from './components/Connection'
+import { markRemote } from './components/Connection'
 import Editor from './components/Editor'
 import Terminal from './components/Terminal'
 import StatusBar from './components/StatusBar'
@@ -160,7 +161,17 @@ export default function App() {
     const file = useAppStore.getState().openedFiles.find(f => f.path === path)
       ?? useAppStore.getState().splitFiles.find(f => f.path === path)
     if (file?.remote) {
-      addToast('Read-only: ficheiro do host', 'warning')
+      const socket = useAppStore.getState().remoteSocket
+      if (!socket) { addToast('Not connected', 'error'); return }
+      socket.emit('write-file', path, content, (ok: boolean, err?: string) => {
+        if (ok) {
+          markFileSaved(path)
+          logEvent('remote file saved', { file: path })
+          addToast('File saved (remote)', 'success')
+        } else {
+          addToast(err ?? 'Permission denied', 'error')
+        }
+      })
       return
     }
     await window.api.writeFile(path, content)
@@ -224,8 +235,18 @@ export default function App() {
 
   // File watch
   useEffect(() => {
-    window.api.onFileChange(({ event }: { event: string; path: string }) => {
+    window.api.onFileChange(({ event, path }: { event: string; path: string }) => {
       if (['add', 'unlink', 'addDir', 'unlinkDir'].includes(event)) refreshTree()
+      // Reload file in editor if changed externally (e.g. client write)
+      if (event === 'change') {
+        const opened = useAppStore.getState().openedFiles.find(f => f.path === path)
+        if (opened && !opened.modified) {
+          window.api.readFile(path).then((content: string) => {
+            useAppStore.getState().updateFileContent(path, content)
+            useAppStore.getState().markFileSaved(path)
+          }).catch(() => {})
+        }
+      }
     })
     // Peer events — registered once here to avoid duplicates
     window.api.onPeerConnected((id: string) => addPeer({ id, ip: 'unknown', name: `Peer ${id.slice(0, 6)}` }))
@@ -279,7 +300,15 @@ export default function App() {
       case 'explorer': return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           <FileExplorer rootPath={localFolder} tree={tree} onFileOpen={handleFileOpen}
-            onRefresh={() => refreshTree()} remoteFiles={remoteFiles} onRemoteCopy={handleRemoteCopy}
+            onRefresh={() => {
+              refreshTree()
+              const socket = useAppStore.getState().remoteSocket
+              if (socket) {
+                setRemoteFiles('loading' as any)
+                socket.emit('get-tree', (t: FileNode) => setRemoteFiles(markRemote(t)))
+              }
+            }}
+            remoteFiles={remoteFiles} onRemoteCopy={handleRemoteCopy}
             onFileOpenSplit={splitEnabled ? handleFileOpenSplit : undefined} />
           <Connection onRemoteTree={setRemoteFiles} />
         </div>

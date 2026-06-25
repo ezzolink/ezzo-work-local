@@ -272,16 +272,16 @@ export default function FileExplorer({ rootPath, tree, onFileOpen, onRefresh, re
           Explorer
         </span>
         <div style={{ display: 'flex', gap: 2 }}>
-          <button title="New File" onClick={() => createNew('file')}
-            style={{ padding: '2px 4px', color: 'var(--text-secondary)', display: 'flex' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'}>
+          <button title="New File" onClick={() => createNew('file')} disabled={!rootPath}
+            style={{ padding: '2px 4px', color: rootPath ? 'var(--text-secondary)' : 'var(--text-muted)', display: 'flex', opacity: rootPath ? 1 : 0.4 }}
+            onMouseEnter={e => { if (rootPath) (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)' }}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = rootPath ? 'var(--text-secondary)' : 'var(--text-muted)'}>
             <IconNewFile size={14} />
           </button>
-          <button title="New Folder" onClick={() => createNew('folder')}
-            style={{ padding: '2px 4px', color: 'var(--text-secondary)', display: 'flex' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'}>
+          <button title="New Folder" onClick={() => createNew('folder')} disabled={!rootPath}
+            style={{ padding: '2px 4px', color: rootPath ? 'var(--text-secondary)' : 'var(--text-muted)', display: 'flex', opacity: rootPath ? 1 : 0.4 }}
+            onMouseEnter={e => { if (rootPath) (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)' }}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = rootPath ? 'var(--text-secondary)' : 'var(--text-muted)'}>
             <IconNewFolder size={14} />
           </button>
           <button title="Refresh" onClick={onRefresh}
