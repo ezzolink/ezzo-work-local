@@ -46,6 +46,7 @@ export default function App() {
   const { addToast } = useToast()
   const { update } = useUpdate()
   const [showUpdate, setShowUpdate] = useState(false)
+  const remoteSocket = useAppStore(s => s.remoteSocket)
 
   const [tree, setTree]                   = useState<FileNode | null>(null)
   const [remoteFiles, setRemoteFiles]     = useState<FileNode | null>(null)
@@ -220,7 +221,7 @@ export default function App() {
           <FileExplorer rootPath={localFolder} tree={tree} onFileOpen={handleFileOpen}
             onRefresh={() => refreshTree()} remoteFiles={remoteFiles} onRemoteCopy={handleRemoteCopy}
             onFileOpenSplit={splitEnabled ? handleFileOpenSplit : undefined} />
-          <Connection />
+          <Connection onRemoteTree={setRemoteFiles} />
         </div>
       )
       case 'search':     return <SearchPanel rootPath={localFolder} />
@@ -230,7 +231,7 @@ export default function App() {
           <div style={{ padding: '0 8px', height: 32, display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-light)', flexShrink: 0 }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Network</span>
           </div>
-          <Connection />
+          <Connection onRemoteTree={setRemoteFiles} />
         </div>
       )
       case 'extensions': return <TaskRunner rootPath={localFolder} onRunTask={(cmd) => {
@@ -319,6 +320,7 @@ export default function App() {
         isTyping={isTyping}
         connectedPeers={connectedPeers.length}
         isHost={isHost}
+        isClientConnected={!!remoteSocket}
         gitChanges={gitChanges}
         activePeer={null}
       />

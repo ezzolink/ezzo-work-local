@@ -3,14 +3,15 @@ import { IconDot, IconPeer, IconHost } from './Icons'
 
 interface Props {
   activeFile: string | null
-  isTyping: boolean         // triggers the activity bar
+  isTyping: boolean
   connectedPeers: number
   isHost: boolean
+  isClientConnected: boolean
   gitChanges: number
-  activePeer: string | null // name of peer currently editing
+  activePeer: string | null
 }
 
-export default function StatusBar({ activeFile, isTyping, connectedPeers, isHost, gitChanges, activePeer }: Props) {
+export default function StatusBar({ activeFile, isTyping, connectedPeers, isHost, isClientConnected, gitChanges, activePeer }: Props) {
   const [barWidth, setBarWidth] = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -39,8 +40,8 @@ export default function StatusBar({ activeFile, isTyping, connectedPeers, isHost
     }
   }, [isTyping])
 
-  const networkStatus = isHost ? 'Host' : connectedPeers > 0 ? 'Connected' : 'Offline'
-  const networkColor  = isHost ? 'var(--accent)' : connectedPeers > 0 ? 'var(--success)' : 'var(--text-muted)'
+  const networkStatus = isHost ? 'Host' : isClientConnected ? 'Connected' : 'Offline'
+  const networkColor  = isHost ? 'var(--accent)' : isClientConnected ? 'var(--success)' : 'var(--text-muted)'
 
   return (
     <div style={{ flexShrink: 0, position: 'relative' }}>

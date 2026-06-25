@@ -16,6 +16,18 @@ let mainWindow: BrowserWindow | null = null
 let ioServer: SocketIOServer | null = null
 let httpServer: ReturnType<typeof createServer> | null = null
 let watcher: ReturnType<typeof chokidar.watch> | null = null
+let currentFolder: string | null = null
+
+function buildTree(p: string): object {
+  const stat = fs.statSync(p)
+  const name = path.basename(p)
+  if (stat.isDirectory()) {
+    let children: object[] = []
+    try { children = fs.readdirSync(p).map((c) => buildTree(path.join(p, c))) } catch { /* permission denied */ }
+    return { name, path: p, type: 'directory', children }
+  }
+  return { name, path: p, type: 'file' }
+}
 
 // Multi-terminal support
 const ptyProcesses = new Map<string, ReturnType<typeof pty.spawn>>()
@@ -175,6 +187,7 @@ function stopServer() {
 
 ipcMain.handle('start-server', (_e, folderPath: string) => {
   stopServer()
+  currentFolder = folderPath
   httpServer = createServer()
   ioServer = new SocketIOServer(httpServer, { cors: { origin: '*' } })
 
@@ -194,6 +207,11 @@ ipcMain.handle('start-server', (_e, folderPath: string) => {
 
     socket.on('request-file', (filePath: string, cb: (c: string) => void) => {
       try { cb(fs.readFileSync(filePath, 'utf-8')) } catch { cb('') }
+    })
+
+    socket.on('get-tree', (cb: (tree: unknown) => void) => {
+      if (!currentFolder) { cb(null); return }
+      try { cb(buildTree(currentFolder)) } catch { cb(null) }
     })
 
     socket.on('write-file', (filePath: string, content: string) => {
