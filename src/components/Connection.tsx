@@ -98,6 +98,10 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
       socket.emit('get-tree', (tree: FileNode) => {
         onRemoteTree?.(tree)
       })
+      // Get host root path for Git/TaskRunner
+      socket.emit('get-root-path', (rootPath: string) => {
+        useAppStore.getState().setRemoteRootPath(rootPath ?? null)
+      })
     })
 
     socket.on('disconnect', () => {
@@ -105,6 +109,7 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
       setRemoteSocket(null)
       _persistedSocket = null
       onRemoteTree?.(null)
+      useAppStore.getState().setRemoteRootPath(null)
       addToast('Disconnected from host', 'warning')
     })
 

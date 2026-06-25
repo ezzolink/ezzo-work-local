@@ -214,12 +214,47 @@ ipcMain.handle('start-server', (_e, folderPath: string) => {
       try { cb(buildTree(currentFolder)) } catch { cb(null) }
     })
 
-    socket.on('write-file', (filePath: string, content: string) => {
+    socket.on('get-root-path', (cb: (p: string | null) => void) => {
+      cb(currentFolder)
+    })
+
+    socket.on('write-file', (filePath: string, content: string, cb?: (ok: boolean, err?: string) => void) => {
       if (peerPermissions[socket.id] === 'read-only') {
-        socket.emit('error', { message: 'Permission denied: read-only' })
+        socket.emit('permission-error', 'Permission denied: read-only')
+        cb?.(false, 'Permission denied: read-only')
         return
       }
-      try { fs.writeFileSync(filePath, content, 'utf-8') } catch { /* ignore */ }
+      try {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true })
+        fs.writeFileSync(filePath, content, 'utf-8')
+        mainWindow?.webContents.send('file-change', { event: 'change', path: filePath })
+        cb?.(true)
+      } catch (e: unknown) {
+        cb?.(false, String((e as Error).message))
+      }
+    })
+
+    socket.on('create-file', (filePath: string, cb?: (ok: boolean, err?: string) => void) => {
+      if (peerPermissions[socket.id] === 'read-only') { cb?.(false, 'read-only'); return }
+      try {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true })
+        if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, '', 'utf-8')
+        cb?.(true)
+      } catch (e: unknown) { cb?.(false, String((e as Error).message)) }
+    })
+
+    socket.on('delete-file', (filePath: string, cb?: (ok: boolean, err?: string) => void) => {
+      if (peerPermissions[socket.id] === 'read-only') { cb?.(false, 'read-only'); return }
+      try { fs.rmSync(filePath, { recursive: true, force: true }); cb?.(true) }
+      catch (e: unknown) { cb?.(false, String((e as Error).message)) }
+    })
+
+    socket.on('list-dir', (dirPath: string, cb: (entries: { name: string; type: 'file' | 'dir' }[] | null) => void) => {
+      try {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+          .map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' as const : 'file' as const }))
+        cb(entries)
+      } catch { cb(null) }
     })
 
     socket.on('chat', (data: { author: string; text: string }) => {

@@ -1,33 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
 import { useAppStore } from '../store/appStore'
 
-interface ChatMsg {
-  id: string
-  author: string
-  text: string
-  ts: number
-}
-
 export default function ChatPanel() {
-  const { remoteSocket, isHost } = useAppStore()
-  const [msgs, setMsgs] = useState<ChatMsg[]>([])
+  const { remoteSocket, isHost, chatMsgs, addChatMsg } = useAppStore()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const localName = localStorage.getItem('ezzo-peer-name') || (isHost ? 'Host' : 'Me')
 
   const addMsg = (data: { author: string; text: string }) =>
-    setMsgs((prev) => [...prev, { id: Math.random().toString(36).slice(2), author: data.author, text: data.text, ts: Date.now() }])
+    addChatMsg({ id: Math.random().toString(36).slice(2), author: data.author, text: data.text, ts: Date.now() })
 
-  // Peer: listen on socket
   useEffect(() => {
     if (!remoteSocket) return
     remoteSocket.on('chat', addMsg)
     return () => { remoteSocket.off('chat', addMsg) }
   }, [remoteSocket])
 
-  // Host: listen on IPC
   useEffect(() => {
     if (!isHost) return
     window.api.onChat?.(addMsg)
@@ -35,18 +25,15 @@ export default function ChatPanel() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [msgs])
+  }, [chatMsgs])
 
   const send = () => {
     const text = input.trim()
     if (!text) return
     const msg = { author: localName, text }
     addMsg(msg)
-    if (isHost) {
-      window.api.hostChatSend?.(msg)
-    } else if (remoteSocket) {
-      remoteSocket.emit('chat', msg)
-    }
+    if (isHost) window.api.hostChatSend?.(msg)
+    else if (remoteSocket) remoteSocket.emit('chat', msg)
     setInput('')
   }
 
@@ -61,7 +48,7 @@ export default function ChatPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
-        {msgs.map((m) => {
+        {chatMsgs.map((m) => {
           const isLocal = m.author === localName
           return (
             <div key={m.id} style={{ marginBottom: 10 }}>
@@ -73,10 +60,8 @@ export default function ChatPanel() {
                   {new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <div
-                style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5 }}
-                dangerouslySetInnerHTML={{ __html: marked.parse(m.text, { async: false }) as string }}
-              />
+              <div style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5 }}
+                dangerouslySetInnerHTML={{ __html: marked.parse(m.text, { async: false }) as string }} />
             </div>
           )
         })}

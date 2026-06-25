@@ -47,7 +47,10 @@ export default function App() {
   const { addToast } = useToast()
   const { update } = useUpdate()
   const [showUpdate, setShowUpdate] = useState(false)
+  const remoteRootPath = useAppStore(s => s.remoteRootPath)
   const remoteSocket = useAppStore(s => s.remoteSocket)
+  // Effective root: local folder or remote host's folder
+  const effectiveRoot = localFolder ?? remoteRootPath
 
   const [tree, setTree]                   = useState<FileNode | null>(null)
   const [remoteFiles, setRemoteFiles]     = useState<FileNode | null | 'loading'>(null)
@@ -93,9 +96,9 @@ export default function App() {
 
   // Fetch git branch whenever folder changes
   useEffect(() => {
-    if (!localFolder) { setGitBranch(null); return }
-    window.api.gitBranch?.(localFolder).then(b => setGitBranch(b ?? null))
-  }, [localFolder])
+    if (!effectiveRoot) { setGitBranch(null); return }
+    window.api.gitBranch?.(effectiveRoot).then(b => setGitBranch(b ?? null))
+  }, [effectiveRoot])
 
   const refreshTree = useCallback(async (path?: string) => {
     const root = path ?? localFolder
@@ -114,6 +117,15 @@ export default function App() {
 
   const handleFileOpen = useCallback(async (node: FileNode) => {
     if (node.type === 'directory') return
+    if (node.remote) {
+      const socket = useAppStore.getState().remoteSocket
+      if (!socket) return
+      socket.emit('request-file', node.path, (content: string) => {
+        openFile({ path: node.path, name: node.name, content, modified: false, remote: true })
+        logEvent('file opened', { file: node.path })
+      })
+      return
+    }
     const content = await window.api.readFile(node.path)
     openFile({ path: node.path, name: node.name, content, modified: false, remote: node.remote })
     logEvent('file opened', { file: node.path })
@@ -122,6 +134,14 @@ export default function App() {
   const { openFileSplit } = useAppStore()
   const handleFileOpenSplit = useCallback(async (node: FileNode) => {
     if (node.type === 'directory') return
+    if (node.remote) {
+      const socket = useAppStore.getState().remoteSocket
+      if (!socket) return
+      socket.emit('request-file', node.path, (content: string) => {
+        openFileSplit({ path: node.path, name: node.name, content, modified: false, remote: true })
+      })
+      return
+    }
     const content = await window.api.readFile(node.path)
     openFileSplit({ path: node.path, name: node.name, content, modified: false, remote: node.remote })
   }, [openFileSplit])
@@ -248,14 +268,14 @@ export default function App() {
           <Connection onRemoteTree={setRemoteFiles} />
         </div>
       )
-      case 'search':     return <SearchPanel rootPath={localFolder} onOpenFile={async (filePath, line) => {
+      case 'search':     return <SearchPanel rootPath={effectiveRoot} onOpenFile={async (filePath, line) => {
         const content = await window.api.readFile(filePath)
         const name = filePath.split(/[/\\]/).pop() ?? filePath
         openFile({ path: filePath, name, content, modified: false })
         // dispatch line navigation after file opens
         setTimeout(() => window.dispatchEvent(new CustomEvent('go-to-line', { detail: { path: filePath, line } })), 100)
       }} />
-      case 'git':        return <GitPanel rootPath={localFolder} onChangesCount={setGitChanges} />
+      case 'git':        return <GitPanel rootPath={effectiveRoot} onChangesCount={setGitChanges} />
       case 'network':    return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ padding: '0 8px', height: 32, display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-light)', flexShrink: 0 }}>
@@ -264,11 +284,11 @@ export default function App() {
           <Connection onRemoteTree={setRemoteFiles} />
         </div>
       )
-      case 'extensions': return <TaskRunner rootPath={localFolder} onRunTask={(cmd) => {
+      case 'extensions': return <TaskRunner rootPath={effectiveRoot} onRunTask={(cmd) => {
         setTerminalVisible(true)
         window.dispatchEvent(new CustomEvent('run-task', { detail: cmd }))
       }} />
-      case 'testing':    return <TestingPanel rootPath={localFolder} onRun={(cmd) => {
+      case 'testing':    return <TestingPanel rootPath={effectiveRoot} onRun={(cmd) => {
         setTerminalVisible(true)
         window.dispatchEvent(new CustomEvent('run-task', { detail: cmd }))
       }} />

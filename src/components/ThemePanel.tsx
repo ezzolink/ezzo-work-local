@@ -3,7 +3,7 @@ import { useTheme } from '../hooks/useTheme'
 import { useUpdate } from '../hooks/useUpdate'
 import UpdateModal from './UpdateModal'
 
-const VERSION = '1.0.0'
+const VERSION = '1.0.3'
 const BUILD_DATE = '2026-06-25'
 
 const IconMoon = () => (

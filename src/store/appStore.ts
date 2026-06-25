@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { Socket } from 'socket.io-client'
 import type { FileNode, OpenedFile, Peer } from '../types'
 
+interface ChatMsg { id: string; author: string; text: string; ts: number }
+
 interface AppState {
   // Files
   openedFiles: OpenedFile[]
@@ -18,6 +20,10 @@ interface AppState {
   isHost: boolean
   connectedPeers: Peer[]
   peerPermissions: Record<string, 'read-only' | 'read-write'>
+  remoteRootPath: string | null
+
+  // Chat
+  chatMsgs: ChatMsg[]
 
   // Actions
   setLocalFolder: (path: string | null) => void
@@ -31,6 +37,8 @@ interface AppState {
   addPeer: (peer: Peer) => void
   removePeer: (id: string) => void
   setPeerPermission: (id: string, perm: 'read-only' | 'read-write') => void
+  setRemoteRootPath: (path: string | null) => void
+  addChatMsg: (msg: ChatMsg) => void
 
   // Split actions
   openFileSplit: (file: OpenedFile) => void
@@ -50,6 +58,8 @@ export const useAppStore = create<AppState>((set) => ({
   isHost: false,
   connectedPeers: [],
   peerPermissions: {},
+  remoteRootPath: null,
+  chatMsgs: [],
 
   setLocalFolder: (path) => set({ localFolder: path }),
 
@@ -93,6 +103,8 @@ export const useAppStore = create<AppState>((set) => ({
     set((s) => ({ connectedPeers: s.connectedPeers.filter((p) => p.id !== id) })),
   setPeerPermission: (id, perm) =>
     set((s) => ({ peerPermissions: { ...s.peerPermissions, [id]: perm } })),
+  setRemoteRootPath: (path) => set({ remoteRootPath: path }),
+  addChatMsg: (msg) => set((s) => ({ chatMsgs: [...s.chatMsgs, msg] })),
 
   openFileSplit: (file) =>
     set((s) => {
