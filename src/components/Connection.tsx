@@ -27,8 +27,9 @@ let _persistedIP = ''
 export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: FileNode | null) => void }) {
   const {
     localFolder, setRemoteSocket, setIsHost, addPeer, removePeer,
-    connectedPeers, isHost, peerPermissions, setPeerPermission,
+    connectedPeers, isHost, setPeerPermission,
   } = useAppStore()
+  const peerPermissions = useAppStore(s => s.peerPermissions)
 
   const [mode, setMode] = useState<Mode>(_persistedMode)
   const [status, setStatus] = useState<Status>(_persistedStatus)
