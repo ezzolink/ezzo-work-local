@@ -378,4 +378,4 @@ chore:    build, dependências
 
 ## Licença
 
-MIT © 2026 EZZO — [ezzo.dev](https://ezzo.dev)
+MIT © 2026 EZZO Digital — [ezzo.dev](https://www.ezzo.gigital)
