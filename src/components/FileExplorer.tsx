@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react'
 import type { FileNode } from '../types'
 import {
-  IconFolder, IconFolderOpen, IconFile, IconFileCode, IconFileText,
-  IconMarkdown, IconImage, IconJson, IconLock,
+  IconFolder, IconFolderOpen,
   IconNewFile, IconNewFolder, IconRename, IconCopy, IconDelete, IconDownload, IconRefresh,
-  IconChevronRight, IconChevronDown,
+  IconChevronRight, IconChevronDown, IconFileCode,
 } from './Icons'
 
 interface ContextMenu { x: number; y: number; node: FileNode }
@@ -18,17 +17,108 @@ interface Props {
   onFileOpenSplit?: (node: FileNode) => void
 }
 
+function FileTypeIcon({ name }: { name: string }) {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  const base = name.toLowerCase()
+  const s = 14
+
+  // Helper: colored SVG file icon
+  const FileIcon = (color: string, badge?: React.ReactNode) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+      <polyline points="14 2 14 8 20 8" />
+      {badge}
+    </svg>
+  )
+
+  // Special file names
+  if (base === 'package.json' || base === 'package-lock.json')
+    return FileIcon('#cb3837') // npm red
+  if (base === 'tsconfig.json' || base.startsWith('tsconfig'))
+    return FileIcon('#3178c6') // typescript blue
+  if (base === 'vite.config.ts' || base === 'vite.config.js')
+    return FileIcon('#646cff') // vite purple
+  if (base === '.gitignore' || base === '.gitattributes')
+    return FileIcon('#f05032') // git orange
+  if (base === 'dockerfile' || base.startsWith('dockerfile'))
+    return FileIcon('#2496ed') // docker blue
+  if (base === 'makefile')
+    return FileIcon('#e34c26')
+  if (base === 'readme.md' || base === 'readme')
+    return FileIcon('#4ec9b0', <><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></>)
+  if (base === 'license' || base === 'license.txt' || base === 'license.md')
+    return FileIcon('#f1c40f')
+
+  // By extension
+  if (ext === 'ts')   return FileIcon('#3178c6', <text x="5" y="17" fontSize="7" fontWeight="bold" stroke="none" fill="#3178c6">TS</text>)
+  if (ext === 'tsx')  return FileIcon('#3178c6', <text x="4" y="17" fontSize="6" fontWeight="bold" stroke="none" fill="#3178c6">TSX</text>)
+  if (ext === 'js')   return FileIcon('#f7df1e', <text x="5" y="17" fontSize="7" fontWeight="bold" stroke="none" fill="#f7df1e">JS</text>)
+  if (ext === 'jsx')  return FileIcon('#61dafb', <text x="4" y="17" fontSize="6" fontWeight="bold" stroke="none" fill="#61dafb">JSX</text>)
+  if (ext === 'mjs' || ext === 'cjs')
+    return FileIcon('#f7df1e', <text x="4.5" y="17" fontSize="5.5" fontWeight="bold" stroke="none" fill="#f7df1e">{ext.toUpperCase()}</text>)
+  if (ext === 'py')   return FileIcon('#3572a5')
+  if (ext === 'html') return FileIcon('#e34c26', <text x="4" y="17" fontSize="5.5" fontWeight="bold" stroke="none" fill="#e34c26">HTML</text>)
+  if (ext === 'css')  return FileIcon('#563d7c', <text x="3.5" y="17" fontSize="5.5" fontWeight="bold" stroke="none" fill="#563d7c">CSS</text>)
+  if (ext === 'scss' || ext === 'sass')
+    return FileIcon('#c6538c', <text x="3" y="17" fontSize="5" fontWeight="bold" stroke="none" fill="#c6538c">SCSS</text>)
+  if (ext === 'less') return FileIcon('#1d365d')
+  if (ext === 'md' || ext === 'mdx')
+    return FileIcon('#4ec9b0', <><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></>)
+  if (ext === 'json') return FileIcon('#f5a623', <text x="5" y="17" fontSize="6" fontWeight="bold" stroke="none" fill="#f5a623">{'{}'}</text>)
+  if (ext === 'yaml' || ext === 'yml')
+    return FileIcon('#cb171e')
+  if (ext === 'toml') return FileIcon('#9c4400')
+  if (ext === 'xml')  return FileIcon('#e37933')
+  if (ext === 'svg')  return FileIcon('#ffb13b')
+  if (['png','jpg','jpeg','gif','webp','ico','bmp'].includes(ext))
+    return (
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="#a8cc8c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+    )
+  if (['mp4','mov','avi','mkv','webm'].includes(ext))
+    return FileIcon('#ff6b6b', <polygon points="10,9 10,15 15,12" stroke="none" fill="#ff6b6b"/>)
+  if (['mp3','wav','ogg','flac'].includes(ext))
+    return FileIcon('#c084fc')
+  if (ext === 'pdf')  return FileIcon('#e53935')
+  if (['zip','tar','gz','rar','7z'].includes(ext))
+    return FileIcon('#d4a017')
+  if (['sh','bash','zsh','fish'].includes(ext))
+    return FileIcon('#89e051')
+  if (ext === 'bat' || ext === 'cmd' || ext === 'ps1')
+    return FileIcon('#012456', <text x="5" y="17" fontSize="6" fontWeight="bold" stroke="none" fill="#89e051">PS</text>)
+  if (['env','env.local','env.production','env.development'].some(s => base.endsWith(s)) || ext === 'env')
+    return FileIcon('#ecc94b', <line x1="12" y1="8" x2="12" y2="14" strokeWidth="2.5"/>)
+  if (ext === 'lock') return FileIcon('#607d8b')
+  if (['woff','woff2','ttf','otf','eot'].includes(ext))
+    return FileIcon('#9b59b6')
+  if (['sql','db','sqlite'].includes(ext))
+    return FileIcon('#336791')
+  if (ext === 'graphql' || ext === 'gql')
+    return FileIcon('#e10098')
+  if (ext === 'prisma') return FileIcon('#5a67d8')
+  if (ext === 'vue')  return FileIcon('#42b883')
+  if (ext === 'svelte') return FileIcon('#ff3e00')
+  if (ext === 'rs')   return FileIcon('#dea584')
+  if (ext === 'go')   return FileIcon('#00add8')
+  if (ext === 'java' || ext === 'kt')
+    return FileIcon('#b07219')
+  if (ext === 'rb')   return FileIcon('#701516')
+  if (ext === 'php')  return FileIcon('#4f5d95')
+  if (ext === 'cs')   return FileIcon('#178600')
+  if (ext === 'cpp' || ext === 'c' || ext === 'h' || ext === 'hpp')
+    return FileIcon('#f34b7d')
+  if (['txt','log'].includes(ext))
+    return FileIcon('var(--text-muted)', <><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></>)
+
+  return FileIcon('var(--text-secondary)')
+}
+
 function fileIconComponent(node: FileNode) {
-  if (node.type === 'directory') return null // handled separately with state
-  const ext = node.name.split('.').pop()?.toLowerCase() ?? ''
-  const props = { size: 13 }
-  if (['ts', 'tsx', 'js', 'jsx', 'py', 'sh', 'bat'].includes(ext)) return <IconFileCode {...props} />
-  if (ext === 'md') return <IconMarkdown {...props} />
-  if (['json', 'yaml', 'yml', 'toml'].includes(ext)) return <IconJson {...props} />
-  if (['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp'].includes(ext)) return <IconImage {...props} />
-  if (['txt', 'log'].includes(ext)) return <IconFileText {...props} />
-  if (ext === 'env' || node.name.startsWith('.env')) return <IconLock {...props} />
-  return <IconFile {...props} />
+  if (node.type === 'directory') return null
+  return <FileTypeIcon name={node.name} />
 }
 
 function TreeNode({ node, depth, onFileOpen, onContext, onDragStart, onDrop, onFileOpenSplit }: {
@@ -71,7 +161,7 @@ function TreeNode({ node, depth, onFileOpen, onContext, onDragStart, onDrop, onF
         </span>
 
         {/* File/folder icon */}
-        <span style={{ display: 'flex', alignItems: 'center', color: node.remote ? 'var(--warning)' : 'var(--accent)', flexShrink: 0 }}>
+        <span style={{ display: 'flex', alignItems: 'center', color: node.remote ? 'var(--warning)' : node.type === 'directory' ? 'var(--accent)' : 'inherit', flexShrink: 0 }}>
           {node.type === 'directory'
             ? (expanded ? <IconFolderOpen size={14} /> : <IconFolder size={14} />)
             : fileIconComponent(node)}
@@ -157,7 +247,7 @@ export default function FileExplorer({ rootPath, tree, onFileOpen, onRefresh, re
       const src = (file as any).path as string
       if (!src) continue
       const dest = rootPath + '/' + file.name
-      await window.api.copyExternal(src, dest)
+      await window.api.copyExternal?.(src, dest)
     }
     onRefresh()
   }, [rootPath, onRefresh])

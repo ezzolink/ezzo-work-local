@@ -259,6 +259,10 @@ ipcMain.on('set-peer-permission', (_e, peerId: string, perm: 'read-only' | 'read
   ioServer?.to(peerId).emit('permission-update', { perm })
 })
 
+ipcMain.on('host-chat-send', (_e, data: { author: string; text: string }) => {
+  ioServer?.emit('chat', data)
+})
+
 // ── Terminal (node-pty) multi-terminal ────────────────────────────────────────
 ipcMain.handle('spawn-terminal', (_e, idOrCols: string | number, colsOrRows: number, rows?: number) => {
   // Support legacy (cols, rows) and new (id, cols, rows) signatures
@@ -361,6 +365,10 @@ function gitExec(cmd: string, cwd: string): string {
     throw new Error(err.stderr || err.stdout || err.message || String(e))
   }
 }
+
+ipcMain.handle('git-branch', (_e, root: string) => {
+  try { return gitExec('git branch --show-current', root).trim() } catch { return null }
+})
 
 ipcMain.handle('git-status', (_e, root: string) => {
   try {

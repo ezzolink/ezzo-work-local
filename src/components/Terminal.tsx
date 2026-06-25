@@ -145,7 +145,7 @@ export default function Terminal({ onReady }: Props) {
     const id = `term-${termCounter}`
     const name = `bash ${termCounter}`
     const partial = createTab(id, name)
-    const tab = partial as TermTab // container set via ref callback
+    const tab = partial as unknown as TermTab // container set via ref callback
     setTabs(prev => {
       const next = [...prev, tab]
       tabsRef.current = next
@@ -173,7 +173,7 @@ export default function Terminal({ onReady }: Props) {
     const id = `term-${termCounter}`
     const name = `bash ${termCounter}`
     const partial = createTab(id, name)
-    const tab = partial as TermTab
+    const tab = partial as unknown as TermTab
     tabsRef.current = [tab]
     setTabs([tab])
     setActiveId(id)

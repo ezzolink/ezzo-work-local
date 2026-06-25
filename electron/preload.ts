@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('api', {
   searchInFiles: (root: string, query: string) => ipcRenderer.invoke('search-in-files', root, query),
 
   // Git
+  gitBranch: (root: string) => ipcRenderer.invoke('git-branch', root),
   gitStatus: (root: string) => ipcRenderer.invoke('git-status', root),
   gitCommit: (root: string, message: string) => ipcRenderer.invoke('git-commit', root, message),
   gitLog: (root: string) => ipcRenderer.invoke('git-log', root),
@@ -77,6 +78,12 @@ contextBridge.exposeInMainWorld('api', {
   onOpenFileAtLine: (cb: (filePath: string, line: number) => void) => {
     ipcRenderer.on('open-file-at-line', (_e, filePath, line) => cb(filePath, line))
   },
+
+  // Chat (host receives from peers via IPC)
+  onChat: (cb: (data: { author: string; text: string }) => void) =>
+    ipcRenderer.on('chat', (_e, data) => cb(data)),
+  hostChatSend: (data: { author: string; text: string }) =>
+    ipcRenderer.send('host-chat-send', data),
 
   // Update
   checkUpdate: () => ipcRenderer.invoke('check-update'),

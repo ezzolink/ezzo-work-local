@@ -2,7 +2,7 @@
 import { IconClose, IconFile } from './Icons'
 import Breadcrumbs from './Breadcrumbs'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState, StateEffect, StateField, RangeSet } from '@codemirror/state'
+import { EditorState, StateEffect, StateField, RangeSet, type Range } from '@codemirror/state'
 import { Decoration, WidgetType, GutterMarker, gutter } from '@codemirror/view'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { javascript } from '@codemirror/lang-javascript'
@@ -44,13 +44,13 @@ const diffGutterState = StateField.define<RangeSet<GutterMarker>>({
     markers = markers.map(tr.changes)
     for (const e of tr.effects) {
       if (e.is(setDiffLines)) {
-        const ranges: { from: number; value: GutterMarker }[] = []
+        const ranges: { from: number; to: number; value: GutterMarker }[] = []
         const doc = tr.newDoc
         const addMarker = (lines: number[], kind: DiffKind) => {
           for (const line of lines) {
             if (line < 1 || line > doc.lines) continue
             const from = doc.line(line).from
-            ranges.push({ from, value: new DiffMarker(kind) })
+            ranges.push({ from, to: from, value: new DiffMarker(kind) })
           }
         }
         addMarker(e.value.added, 'added')
@@ -117,7 +117,7 @@ const cursorField = StateField.define<RangeSet<Decoration>>({
     deco = deco.map(tr.changes)
     for (const e of tr.effects) {
       if (e.is(setCursors)) {
-        const marks: ReturnType<typeof Decoration.mark>[] = []
+        const marks: Range<Decoration>[] = []
         for (const c of e.value) {
           const docLen = tr.newDoc.length
           const anchor = Math.min(c.anchor, docLen)
@@ -137,7 +137,7 @@ const cursorField = StateField.define<RangeSet<Decoration>>({
           }).range(head))
         }
         deco = marks.length
-          ? RangeSet.of(marks.sort((a, b) => a.from - b.from || a.startSide - b.startSide))
+          ? RangeSet.of(marks.sort((a, b) => a.from - b.from))
           : RangeSet.empty
       }
     }
@@ -343,6 +343,10 @@ function EditorPane({
             if (update.selectionSet && onCursorChange) {
               const sel = update.state.selection.main
               onCursorChange(sel.anchor, sel.head)
+              const line = update.state.doc.lineAt(sel.head)
+              window.dispatchEvent(new CustomEvent('cursor-position', {
+                detail: { line: line.number, col: sel.head - line.from + 1 }
+              }))
             }
           }),
           EditorView.domEventHandlers({

@@ -60,6 +60,9 @@ export default function App() {
   const [isTyping, setIsTyping]               = useState(false)
   const [paletteOpen, setPaletteOpen]         = useState(false)
   const [paletteMode, setPaletteMode]         = useState<'files' | 'commands'>('files')
+  const [cursorLine, setCursorLine]           = useState(1)
+  const [cursorCol, setCursorCol]             = useState(1)
+  const [gitBranch, setGitBranch]             = useState<string | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Persist workspace on unload
@@ -87,6 +90,12 @@ export default function App() {
 
   const folderName = localFolder ? localFolder.split(/[/\\]/).pop() ?? localFolder : null
   const flatFiles = tree ? flattenTree(tree) : []
+
+  // Fetch git branch whenever folder changes
+  useEffect(() => {
+    if (!localFolder) { setGitBranch(null); return }
+    window.api.gitBranch?.(localFolder).then(b => setGitBranch(b ?? null))
+  }, [localFolder])
 
   const refreshTree = useCallback(async (path?: string) => {
     const root = path ?? localFolder
@@ -187,12 +196,23 @@ export default function App() {
     window.api.onPeerDisconnected((id: string) => removePeer(id))
   }, []) // eslint-disable-line
 
+  // Cursor position from Editor
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { line, col } = (e as CustomEvent).detail
+      setCursorLine(line)
+      setCursorCol(col)
+    }
+    window.addEventListener('cursor-position', handler)
+    return () => window.removeEventListener('cursor-position', handler)
+  }, [])
+
   // Remote file change
   useEffect(() => {
     const handler = (e: Event) => {
       const { event } = (e as CustomEvent).detail
       if (['add', 'unlink', 'addDir', 'unlinkDir'].includes(event))
-        setRemoteFiles(prev => prev ? { ...prev } : null)
+        setRemoteFiles(prev => (prev && prev !== 'loading') ? { ...prev } : prev)
     }
     window.addEventListener('remote-file-change', handler)
     return () => window.removeEventListener('remote-file-change', handler)
@@ -333,6 +353,19 @@ export default function App() {
         isClientConnected={!!remoteSocket}
         gitChanges={gitChanges}
         activePeer={null}
+        localFolder={localFolder}
+        cursorLine={cursorLine}
+        cursorCol={cursorCol}
+        gitBranch={gitBranch}
+        language={null}
+        onClickLineCol={() => {
+          const input = prompt('Go to line:')
+          if (!input) return
+          const line = parseInt(input)
+          if (!isNaN(line) && activeFile) {
+            window.dispatchEvent(new CustomEvent('go-to-line', { detail: { path: activeFile, line } }))
+          }
+        }}
       />
 
       <CommandPalette

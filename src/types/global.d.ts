@@ -43,6 +43,7 @@ declare global {
       searchInFiles?: (root: string, query: string) => Promise<{ file: string; line: number; text: string }[]>
 
       // Git
+      gitBranch?: (root: string) => Promise<string | null>
       gitStatus?: (root: string) => Promise<{ path: string; status: 'M' | 'A' | 'D' | '?' }[]>
       gitCommit?: (root: string, message: string) => Promise<void>
       gitLog?: (root: string) => Promise<{ hash: string; message: string; author: string; date: string }[]>
@@ -60,7 +61,8 @@ declare global {
       openFileAtLine?: (path: string, line: number) => void
       onOpenFileAtLine?: (cb: (path: string, line: number) => void) => void
 
-      // Update
+      onChat?: (cb: (data: { author: string; text: string }) => void) => void
+      hostChatSend?: (data: { author: string; text: string }) => void
       checkUpdate?: () => Promise<{ hasUpdate: boolean; current: string; latest: string; notes: string; url: string; assets: { name: string; browser_download_url: string; size: number }[] }>
       openUpdateUrl?: (url: string) => void
       downloadUpdate?: (url: string) => Promise<{ ok: boolean; path?: string; error?: string }>

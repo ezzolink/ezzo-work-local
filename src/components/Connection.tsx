@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useAppStore } from '../store/appStore'
 import { IconHost, IconConnect, IconDisconnect, IconPeer, IconDot } from './Icons'
+import { useToast } from '../hooks/useToast'
 import type { FileNode, Peer } from '../types'
 
 type Mode = 'idle' | 'host' | 'client'
@@ -30,6 +31,7 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
     connectedPeers, isHost, setPeerPermission,
   } = useAppStore()
   const peerPermissions = useAppStore(s => s.peerPermissions)
+  const { addToast } = useToast()
 
   const [mode, setMode] = useState<Mode>(_persistedMode)
   const [status, setStatus] = useState<Status>(_persistedStatus)
@@ -50,7 +52,7 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
   }, [])
 
   const startHost = async () => {
-    if (!localFolder) { alert('Open a folder first'); return }
+    if (!localFolder) { addToast('Open a folder first', 'warning'); return }
     await window.api.startServer(localFolder)
     setModePersist('host'); setIsHost(true); setStatusPersist('sharing')
   }
@@ -103,12 +105,13 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
       setRemoteSocket(null)
       _persistedSocket = null
       onRemoteTree?.(null)
+      addToast('Disconnected from host', 'warning')
     })
 
     socket.on('connect_error', () => {
       setStatusPersist('disconnected')
       _persistedSocket = null
-      alert(`Cannot connect to ${host}:7700`)
+      addToast(`Cannot connect to ${host}:7700`, 'error')
     })
 
     socket.on('file-change', (data: { event: string; path: string }) => {
