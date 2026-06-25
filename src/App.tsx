@@ -40,6 +40,7 @@ export default function App() {
     updateFileContent, markFileSaved,
     connectedPeers, isHost,
     splitEnabled, setSplitEnabled,
+    addPeer, removePeer,
   } = useAppStore()
 
   const { logEvent } = useSessionLog()
@@ -181,6 +182,9 @@ export default function App() {
     window.api.onFileChange(({ event }: { event: string; path: string }) => {
       if (['add', 'unlink', 'addDir', 'unlinkDir'].includes(event)) refreshTree()
     })
+    // Peer events — registered once here to avoid duplicates
+    window.api.onPeerConnected((id: string) => addPeer({ id, ip: 'unknown', name: `Peer ${id.slice(0, 6)}` }))
+    window.api.onPeerDisconnected((id: string) => removePeer(id))
   }, []) // eslint-disable-line
 
   // Remote file change

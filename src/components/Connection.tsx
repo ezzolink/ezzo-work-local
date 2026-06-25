@@ -44,13 +44,7 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
 
   useEffect(() => {
     window.api.getLocalIP().then((ip: string) => setLocalIP(ip))
-    window.api.onPeerConnected((id: string) => addPeer({ id, ip: 'unknown', name: `Peer ${id.slice(0, 6)}` }))
-    window.api.onPeerDisconnected((id: string) => removePeer(id))
-
-    // Re-register existing socket events if we have a persisted socket
-    if (_persistedSocket) {
-      setRemoteSocket(_persistedSocket)
-    }
+    if (_persistedSocket) setRemoteSocket(_persistedSocket)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
