@@ -53,6 +53,14 @@ export default function GitPanel({ rootPath, onChangesCount }: Props) {
 
   useEffect(() => { refresh() }, [rootPath]) // eslint-disable-line
 
+  // Realtime: refresh on file-change events + every 5s
+  useEffect(() => {
+    const handler = () => refresh()
+    window.api.onFileChange(handler)
+    const interval = setInterval(refresh, 5000)
+    return () => clearInterval(interval)
+  }, [rootPath]) // eslint-disable-line
+
   useEffect(() => {
     if (tab === 'log') loadLog()
   }, [tab, rootPath]) // eslint-disable-line

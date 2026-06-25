@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
+
+function markRemote(node: FileNode): FileNode {
+  return {
+    ...node,
+    remote: true,
+    children: node.children?.map(markRemote),
+  }
+}
 import { io, Socket } from 'socket.io-client'
 import { useAppStore } from '../store/appStore'
 import { IconHost, IconConnect, IconDisconnect, IconPeer, IconDot } from './Icons'
@@ -96,7 +104,7 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
       // Request initial file tree from host — show loading state
       onRemoteTree?.('loading' as any)
       socket.emit('get-tree', (tree: FileNode) => {
-        onRemoteTree?.(tree)
+        onRemoteTree?.(markRemote(tree))
       })
       // Get host root path for Git/TaskRunner
       socket.emit('get-root-path', (rootPath: string) => {
@@ -123,7 +131,7 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
       window.dispatchEvent(new CustomEvent('remote-file-change', { detail: data }))
       // Refresh remote tree on structural changes
       if (['add', 'unlink', 'addDir', 'unlinkDir'].includes(data.event)) {
-        socket.emit('get-tree', (tree: FileNode) => onRemoteTree?.(tree))
+        socket.emit('get-tree', (tree: FileNode) => onRemoteTree?.(markRemote(tree)))
       }
     })
   }
