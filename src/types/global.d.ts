@@ -24,7 +24,7 @@ declare global {
       // Server
       startServer: (folderPath: string) => Promise<boolean>
       stopServer: () => Promise<boolean>
-      setPeerPermission?: (peerId: string, perm: 'read-only' | 'read-write') => void
+      setPeerPermission: (peerId: string, perm: 'read-only' | 'read-write') => void
 
       // Events
       onFileChange: (cb: (data: { event: string; path: string }) => void) => void
@@ -61,7 +61,7 @@ declare global {
       onOpenFileAtLine?: (cb: (path: string, line: number) => void) => void
 
       // Update
-      checkUpdate?: () => Promise<{ hasUpdate: boolean; current: string; latest: string; notes: string; url: string; assets: { name: string; browser_download_url: string }[] }>
+      checkUpdate?: () => Promise<{ hasUpdate: boolean; current: string; latest: string; notes: string; url: string; assets: { name: string; browser_download_url: string; size: number }[] }>
       openUpdateUrl?: (url: string) => void
     }
   }

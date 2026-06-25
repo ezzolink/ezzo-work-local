@@ -6,7 +6,7 @@ export interface UpdateInfo {
   latest: string
   notes: string
   url: string
-  assets: { name: string; browser_download_url: string }[]
+  assets: { name: string; browser_download_url: string; size: number }[]
 }
 
 export function useUpdate() {

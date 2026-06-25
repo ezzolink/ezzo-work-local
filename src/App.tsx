@@ -224,7 +224,13 @@ export default function App() {
           <Connection onRemoteTree={setRemoteFiles} />
         </div>
       )
-      case 'search':     return <SearchPanel rootPath={localFolder} />
+      case 'search':     return <SearchPanel rootPath={localFolder} onOpenFile={async (filePath, line) => {
+        const content = await window.api.readFile(filePath)
+        const name = filePath.split(/[/\\]/).pop() ?? filePath
+        openFile({ path: filePath, name, content, modified: false })
+        // dispatch line navigation after file opens
+        setTimeout(() => window.dispatchEvent(new CustomEvent('go-to-line', { detail: { path: filePath, line } })), 100)
+      }} />
       case 'git':        return <GitPanel rootPath={localFolder} onChangesCount={setGitChanges} />
       case 'network':    return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

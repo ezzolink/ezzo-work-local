@@ -12,7 +12,7 @@ export function useGitDiff(filePath: string | null): GitDiff {
   useEffect(() => {
     if (!filePath) { setDiff({ added: [], modified: [], removed: [] }); return }
     let cancelled = false
-    window.api.gitDiff?.(filePath).then(d => {
+    window.api.gitDiff?.(filePath)?.then(d => {
       if (!cancelled) setDiff(d)
     }).catch(() => {
       if (!cancelled) setDiff({ added: [], modified: [], removed: [] })

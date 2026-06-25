@@ -3,9 +3,12 @@ import { IconSearch, IconFile } from './Icons'
 
 interface Result { file: string; line: number; text: string }
 
-interface Props { rootPath: string | null }
+interface Props {
+  rootPath: string | null
+  onOpenFile?: (path: string, line: number) => void
+}
 
-export default function SearchPanel({ rootPath }: Props) {
+export default function SearchPanel({ rootPath, onOpenFile }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
   const [searching, setSearching] = useState(false)
@@ -49,6 +52,7 @@ export default function SearchPanel({ rootPath }: Props) {
         )}
         {results.map((r, i) => (
           <div key={i} style={{ padding: '4px 8px', borderBottom: '1px solid var(--border-light)', cursor: 'pointer' }}
+            onClick={() => onOpenFile?.(r.file, r.line)}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { IconDot, IconPeer, IconHost } from './Icons'
+import { IconDot, IconPeer } from './Icons'
 
 interface Props {
   activeFile: string | null

@@ -143,8 +143,8 @@ ipcMain.handle('copy', (_e, src: string, dest: string) => {
   return true
 })
 
-ipcMain.handle('delete', (_e, filePath: string) => {
-  shell.trashItem(filePath)
+ipcMain.handle('delete', async (_e, filePath: string) => {
+  await shell.trashItem(filePath)
   return true
 })
 
@@ -373,8 +373,13 @@ ipcMain.handle('git-status', (_e, root: string) => {
 })
 
 ipcMain.handle('git-commit', (_e, root: string, message: string) => {
-  gitExec('git add -A', root)
-  gitExec(`git commit -m "${message.replace(/"/g, '\\"')}"`, root)
+  try {
+    gitExec('git add -A', root)
+    gitExec(`git commit -m "${message.replace(/"/g, '\\"')}"`, root)
+    return { ok: true, msg: 'Committed' }
+  } catch (e: unknown) {
+    return { ok: false, msg: String((e as Error).message) }
+  }
 })
 
 ipcMain.handle('git-log', (_e, root: string) => {
@@ -478,4 +483,79 @@ ipcMain.handle('check-update', async () => {
 
 ipcMain.on('open-update-url', (_e, url: string) => {
   shell.openExternal(url)
+})
+
+// ── Open in VS Code ───────────────────────────────────────────────────────────
+ipcMain.on('open-in-vscode', (_e, filePath: string) => {
+  shell.openExternal(`vscode://file/${filePath}`).catch(() => {
+    try { execSync(`code "${filePath}"`) } catch { /* VS Code not installed */ }
+  })
+})
+
+// ── Search in files ───────────────────────────────────────────────────────────
+ipcMain.handle('search-in-files', (_e, root: string, query: string) => {
+  const results: { file: string; line: number; text: string }[] = []
+  if (!query.trim()) return results
+  const q = query.toLowerCase()
+  const SKIP = new Set(['node_modules', '.git', 'dist', 'dist-electron', 'dist-app'])
+
+  function walk(dir: string) {
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (results.length >= 500) return
+        const full = path.join(dir, entry.name)
+        if (entry.isDirectory() && !SKIP.has(entry.name)) { walk(full); continue }
+        if (!entry.isFile()) continue
+        try {
+          const lines = fs.readFileSync(full, 'utf-8').split('\n')
+          lines.forEach((text, i) => {
+            if (text.toLowerCase().includes(q)) results.push({ file: full, line: i + 1, text })
+          })
+        } catch { /* binary */ }
+      }
+    } catch { /* permission */ }
+  }
+
+  walk(root)
+  return results
+})
+
+// ── Open in VS Code ───────────────────────────────────────────────────────────
+ipcMain.on('open-in-vscode', (_e, filePath: string) => {
+  shell.openExternal(`vscode://file/${filePath}`).catch(() => {
+    // fallback: try launching code command
+    try { execSync(`code "${filePath}"`) } catch { /* VS Code not installed */ }
+  })
+})
+
+// ── Search in files ───────────────────────────────────────────────────────────
+ipcMain.handle('search-in-files', (_e, root: string, query: string) => {
+  const results: { file: string; line: number; text: string }[] = []
+  if (!query.trim()) return results
+  const q = query.toLowerCase()
+
+  function walk(dir: string) {
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name)
+        if (entry.isDirectory()) {
+          if (!['node_modules', '.git', 'dist', 'dist-electron', 'dist-app'].includes(entry.name)) walk(full)
+        } else if (entry.isFile()) {
+          try {
+            const content = fs.readFileSync(full, 'utf-8')
+            const lines = content.split('\n')
+            for (let i = 0; i < lines.length; i++) {
+              if (lines[i].toLowerCase().includes(q)) {
+                results.push({ file: full, line: i + 1, text: lines[i] })
+                if (results.length >= 500) return
+              }
+            }
+          } catch { /* binary file */ }
+        }
+      }
+    } catch { /* permission denied */ }
+  }
+
+  walk(root)
+  return results
 })

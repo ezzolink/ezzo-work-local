@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconMinimize, IconMaximize, IconClose, IconOpenFolder } from './Icons'
+import { IconMinimize, IconMaximize, IconClose } from './Icons'
 import type { UpdateInfo } from '../hooks/useUpdate'
 
 interface Props {

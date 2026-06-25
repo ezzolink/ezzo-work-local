@@ -28,7 +28,8 @@ export function useSaveWorkspace(terminalHeight: number, activePanel: string) {
   useEffect(() => {
     window.addEventListener('beforeunload', save)
     return () => { save(); window.removeEventListener('beforeunload', save) }
-  })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localFolder, openedFiles, activeFile, terminalHeight, activePanel])
 }
 
 export function loadWorkspace(): WorkspaceData | null {

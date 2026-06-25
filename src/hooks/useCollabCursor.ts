@@ -30,8 +30,7 @@ export function useCollabCursor(
 
   // Listen for remote cursor events
   useEffect(() => {
-    if (!remoteSocket && !isHost) return
-
+    // Client needs remoteSocket; host listens via ioServer events (not applicable here)
     const socket = remoteSocket
     if (!socket) return
 
@@ -45,7 +44,7 @@ export function useCollabCursor(
 
     socket.on('cursor', handler)
     return () => { socket.off('cursor', handler) }
-  }, [remoteSocket, isHost])
+  }, [remoteSocket])
 
   // Remove cursor when peer disconnects
   useEffect(() => {
@@ -61,15 +60,9 @@ export function useCollabCursor(
   function broadcastCursor(anchor: number, head: number) {
     if (!filePath) return
     const socket = remoteSocket
-    const payload = {
-      filePath,
-      anchor,
-      head,
-      peerName: isHost ? 'Host' : 'Me',
-    }
-    if (socket?.connected) {
-      socket.emit('cursor', payload)
-    }
+    const name = localStorage.getItem('ezzo-peer-name') || (isHost ? 'Host' : 'Peer')
+    const payload = { filePath, anchor, head, peerName: name }
+    if (socket?.connected) socket.emit('cursor', payload)
   }
 
   return { broadcastCursor, peerColor }

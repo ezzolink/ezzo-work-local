@@ -81,15 +81,18 @@ export default function CommandPalette({ open, onClose, files, onOpenFile, onCom
 
   useEffect(() => { setActiveIdx(0) }, [query])
 
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onClose(); return }
-      if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, total - 1)) }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, itemsRef.current.length - 1)) }
       if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
       if (e.key === 'Enter') {
         e.preventDefault()
-        const item = items[activeIdx]
+        const item = itemsRef.current[activeIdx]
         if (!item) return
         if (item.isFile && item.node) onOpenFile(item.node)
         else onCommand(item.label)
@@ -98,7 +101,7 @@ export default function CommandPalette({ open, onClose, files, onOpenFile, onCom
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open, total, activeIdx, items, onClose, onOpenFile, onCommand])
+  }, [open, activeIdx, onClose, onOpenFile, onCommand])
 
   // Scroll active item into view
   useEffect(() => {
