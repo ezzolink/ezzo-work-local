@@ -5,6 +5,7 @@ import { WebLinksAddon } from 'xterm-addon-web-links'
 import type { ILinkProvider, ILink, IBufferCellPosition, IViewportRange } from 'xterm'
 import 'xterm/css/xterm.css'
 import { useTheme } from '../hooks/useTheme'
+import { useSettings } from '../hooks/useSettings'
 
 interface TermTab {
   id: string
@@ -84,10 +85,10 @@ const XTERM_LIGHT = {
 
 let termCounter = 0
 
-function createTab(id: string, name: string): Omit<TermTab, 'container'> & { container: null } {
+function createTab(id: string, name: string, fontSize = 13): Omit<TermTab, 'container'> & { container: null } {
   const term = new XTerm({
     fontFamily: 'var(--font-mono)',
-    fontSize: 13,
+    fontSize,
     theme: XTERM_DARK,
     cursorBlink: true,
     allowTransparency: true,
@@ -107,6 +108,15 @@ export default function Terminal({ onReady }: Props) {
   const initedRef = useRef(false)
   const tabsRef = useRef<TermTab[]>([])
   const { isDark } = useTheme()
+  const settings = useSettings()
+
+  // Apply font size when setting changes
+  useEffect(() => {
+    tabsRef.current.forEach(t => {
+      t.term.options.fontSize = settings.terminalFontSize
+      try { t.fit.fit() } catch { /* */ }
+    })
+  }, [settings.terminalFontSize])
 
   // Apply xterm theme when dark/light changes
   useEffect(() => {
@@ -144,7 +154,7 @@ export default function Terminal({ onReady }: Props) {
     termCounter++
     const id = `term-${termCounter}`
     const name = `bash ${termCounter}`
-    const partial = createTab(id, name)
+    const partial = createTab(id, name, settings.terminalFontSize)
     const tab = partial as unknown as TermTab // container set via ref callback
     setTabs(prev => {
       const next = [...prev, tab]
@@ -172,7 +182,7 @@ export default function Terminal({ onReady }: Props) {
     termCounter++
     const id = `term-${termCounter}`
     const name = `bash ${termCounter}`
-    const partial = createTab(id, name)
+    const partial = createTab(id, name, settings.terminalFontSize)
     const tab = partial as unknown as TermTab
     tabsRef.current = [tab]
     setTabs([tab])

@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { IconClose, IconFile } from './Icons'
 import Breadcrumbs from './Breadcrumbs'
+import { useSettings } from '../hooks/useSettings'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateEffect, StateField, RangeSet, type Range } from '@codemirror/state'
 import { Decoration, WidgetType, GutterMarker, gutter } from '@codemirror/view'
@@ -292,6 +293,7 @@ function EditorPane({
   remoteCursors?: RemoteCursor[]
   diff?: { added: number[]; modified: number[]; removed: number[] }
 }) {
+  const settings = useSettings()
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -332,13 +334,16 @@ function EditorPane({
             '.cm-scroller': { fontFamily: 'var(--font-mono)', fontSize: 'var(--editor-font-size, 13px)', overflow: 'auto' },
             '.cm-content': { padding: '8px 0' },
           }),
+          ...(settings.wordWrap ? [EditorView.lineWrapping] : []),
           EditorView.updateListener.of((update: import('@codemirror/view').ViewUpdate) => {
             if (update.docChanged) {
               const content = update.state.doc.toString()
               setLiveContent(content)
               onChange(content)
-              if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-              saveTimerRef.current = setTimeout(() => onSave(content), 1000)
+              if (settings.autosave) {
+                if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+                saveTimerRef.current = setTimeout(() => onSave(content), 1000)
+              }
             }
             if (update.selectionSet && onCursorChange) {
               const sel = update.state.selection.main
@@ -402,7 +407,7 @@ function EditorPane({
       ) : (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           <div ref={containerRef} style={{ flex: 1, overflow: 'hidden' }} />
-          <Minimap content={liveContent} viewRef={viewRef} />
+          {settings.minimap && <Minimap content={liveContent} viewRef={viewRef} />}
         </div>
       )}
     </div>

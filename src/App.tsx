@@ -33,6 +33,16 @@ export default function App() {
   // Apply theme on mount
   useTheme()
 
+  // Apply saved editor settings CSS vars on mount
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('ezzo-settings') ?? '{}')
+      if (s.fontSize) document.documentElement.style.setProperty('--editor-font-size', `${s.fontSize}px`)
+      if (s.sidebarWidth) document.documentElement.style.setProperty('--sidebar-width', `${s.sidebarWidth}px`)
+    } catch { /* */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const {
     localFolder, setLocalFolder,
     openedFiles, activeFile,

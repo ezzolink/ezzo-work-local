@@ -98,12 +98,9 @@ export default function ThemePanel() {
     const next = { ...settings, [key]: value }
     setSettings(next)
     saveSettings(next)
-    if (key === 'fontSize') {
-      document.documentElement.style.setProperty('--editor-font-size', `${value}px`)
-    }
-    if (key === 'sidebarWidth') {
-      document.documentElement.style.setProperty('--sidebar-width', `${value}px`)
-    }
+    if (key === 'fontSize') document.documentElement.style.setProperty('--editor-font-size', `${value}px`)
+    if (key === 'sidebarWidth') document.documentElement.style.setProperty('--sidebar-width', `${value}px`)
+    window.dispatchEvent(new Event('ezzo-settings-changed'))
   }
 
   return (
