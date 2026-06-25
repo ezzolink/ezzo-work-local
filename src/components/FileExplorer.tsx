@@ -13,7 +13,7 @@ interface Props {
   tree: FileNode | null
   onFileOpen: (node: FileNode) => void
   onRefresh: () => void
-  remoteFiles?: FileNode | null
+  remoteFiles?: FileNode | null | 'loading'
   onRemoteCopy?: (node: FileNode) => void
   onFileOpenSplit?: (node: FileNode) => void
 }
@@ -218,12 +218,25 @@ export default function FileExplorer({ rootPath, tree, onFileOpen, onRefresh, re
         )}
 
         {/* Remote tree */}
-        {remoteFiles && (
+        {remoteFiles === 'loading' && (
           <div style={{ marginTop: 8, borderTop: '1px solid var(--border)' }}>
             <div style={{ padding: '6px 8px', fontSize: 10, color: 'var(--warning)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Remote Files
             </div>
-            <TreeNode node={remoteFiles} depth={0} onFileOpen={onFileOpen}
+            <div style={{ padding: '16px 8px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: 12 }}>
+              <svg style={{ animation: 'spin 1s linear infinite' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+              </svg>
+              A carregar repositório…
+            </div>
+          </div>
+        )}
+        {remoteFiles && remoteFiles !== 'loading' && (
+          <div style={{ marginTop: 8, borderTop: '1px solid var(--border)' }}>
+            <div style={{ padding: '6px 8px', fontSize: 10, color: 'var(--warning)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Remote Files
+            </div>
+            <TreeNode node={remoteFiles as FileNode} depth={0} onFileOpen={onFileOpen}
               onContext={(e, n) => setContextMenu({ x: e.clientX, y: e.clientY, node: n })}
               onDragStart={n => { dragRef.current = n }}
               onDrop={handleDrop} />

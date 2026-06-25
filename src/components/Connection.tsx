@@ -91,7 +91,8 @@ export default function Connection({ onRemoteTree }: { onRemoteTree?: (tree: Fil
       setRemoteSocket(socket)
       _persistedSocket = socket
 
-      // Request initial file tree from host
+      // Request initial file tree from host — show loading state
+      onRemoteTree?.('loading' as any)
       socket.emit('get-tree', (tree: FileNode) => {
         onRemoteTree?.(tree)
       })

@@ -50,7 +50,7 @@ export default function App() {
   const remoteSocket = useAppStore(s => s.remoteSocket)
 
   const [tree, setTree]                   = useState<FileNode | null>(null)
-  const [remoteFiles, setRemoteFiles]     = useState<FileNode | null>(null)
+  const [remoteFiles, setRemoteFiles]     = useState<FileNode | null | 'loading'>(null)
   const [terminalVisible, setTerminalVisible] = useState(true)
   const [terminalHeight, setTerminalHeight]   = useState(220)
   const [sidebarVisible, setSidebarVisible]   = useState(true)
