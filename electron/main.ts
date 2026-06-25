@@ -532,41 +532,36 @@ ipcMain.on('open-update-url', (_e, url: string) => {
 ipcMain.handle('download-update', async (_e, url: string) => {
   const tmpPath = path.join(os.tmpdir(), 'ezzo-update-setup.exe')
 
-  return new Promise<{ ok: boolean; path?: string; error?: string }>((resolve) => {
-    const file = fs.createWriteStream(tmpPath)
-
-    const request = https.get(url, { headers: { 'User-Agent': 'EZZO-Work-Local' } }, (res) => {
-      // Follow redirect
-      if (res.statusCode === 302 || res.statusCode === 301) {
-        file.close()
-        ipcMain.emit('download-update', _e, res.headers.location!)
-        https.get(res.headers.location!, { headers: { 'User-Agent': 'EZZO-Work-Local' } }, (res2) => {
-          const total = parseInt(res2.headers['content-length'] ?? '0', 10)
-          let downloaded = 0
-          res2.pipe(file)
-          res2.on('data', (chunk: Buffer) => {
-            downloaded += chunk.length
-            if (total > 0) mainWindow?.webContents.send('update-progress', Math.round((downloaded / total) * 100))
-          })
-          file.on('finish', () => { file.close(); resolve({ ok: true, path: tmpPath }) })
-          res2.on('error', (e) => resolve({ ok: false, error: e.message }))
-        }).on('error', (e) => resolve({ ok: false, error: e.message }))
-        return
-      }
-
-      const total = parseInt(res.headers['content-length'] ?? '0', 10)
-      let downloaded = 0
-      res.pipe(file)
-      res.on('data', (chunk: Buffer) => {
-        downloaded += chunk.length
-        if (total > 0) mainWindow?.webContents.send('update-progress', Math.round((downloaded / total) * 100))
-      })
-      file.on('finish', () => { file.close(); resolve({ ok: true, path: tmpPath }) })
-      res.on('error', (e) => resolve({ ok: false, error: e.message }))
+  function doDownload(downloadUrl: string, redirects = 0): Promise<{ ok: boolean; path?: string; error?: string }> {
+    return new Promise((resolve) => {
+      const file = fs.createWriteStream(tmpPath)
+      https.get(downloadUrl, { headers: { 'User-Agent': 'EZZO-Work-Local' } }, (res) => {
+        if ((res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) && res.headers.location && redirects < 5) {
+          file.close()
+          fs.unlink(tmpPath, () => {})
+          doDownload(res.headers.location, redirects + 1).then(resolve)
+          return
+        }
+        if (res.statusCode !== 200) {
+          file.close()
+          resolve({ ok: false, error: `HTTP ${res.statusCode}` })
+          return
+        }
+        const total = parseInt(res.headers['content-length'] ?? '0', 10)
+        let downloaded = 0
+        res.on('data', (chunk: Buffer) => {
+          downloaded += chunk.length
+          if (total > 0) mainWindow?.webContents.send('update-progress', Math.round((downloaded / total) * 100))
+        })
+        res.pipe(file)
+        file.on('finish', () => { file.close(); resolve({ ok: true, path: tmpPath }) })
+        file.on('error', (e) => resolve({ ok: false, error: e.message }))
+        res.on('error', (e) => resolve({ ok: false, error: e.message }))
+      }).on('error', (e) => resolve({ ok: false, error: e.message }))
     })
+  }
 
-    request.on('error', (e) => resolve({ ok: false, error: e.message }))
-  })
+  return doDownload(url)
 })
 
 ipcMain.handle('install-update', (_e, exePath: string) => {
