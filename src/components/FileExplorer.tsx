@@ -193,6 +193,7 @@ export default function FileExplorer({ rootPath, tree, onFileOpen, onRefresh, re
   const handleDrop = useCallback(async (target: FileNode) => {
     const src = dragRef.current
     if (!src || target.type !== 'directory' || src.path === target.path) return
+    if (src.remote || target.remote) return
     await window.api.move(src.path, target.path + '/' + src.name)
     onRefresh()
     dragRef.current = null
@@ -358,19 +359,21 @@ export default function FileExplorer({ rootPath, tree, onFileOpen, onRefresh, re
       {contextMenu && (
         <div className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={e => e.stopPropagation()}>
-          <div className="context-menu-item" onClick={() => execCtx('new-file')}>
-            <IconNewFile size={13} /><span>New File</span>
-          </div>
-          <div className="context-menu-item" onClick={() => execCtx('new-folder')}>
-            <IconNewFolder size={13} /><span>New Folder</span>
-          </div>
-          <div className="context-menu-separator" />
-          <div className="context-menu-item" onClick={() => execCtx('rename')}>
-            <IconRename size={13} /><span>Rename</span>
-          </div>
-          <div className="context-menu-item" onClick={() => execCtx('copy')}>
-            <IconCopy size={13} /><span>Copy</span>
-          </div>
+          {!contextMenu.node.remote && <>
+            <div className="context-menu-item" onClick={() => execCtx('new-file')}>
+              <IconNewFile size={13} /><span>New File</span>
+            </div>
+            <div className="context-menu-item" onClick={() => execCtx('new-folder')}>
+              <IconNewFolder size={13} /><span>New Folder</span>
+            </div>
+            <div className="context-menu-separator" />
+            <div className="context-menu-item" onClick={() => execCtx('rename')}>
+              <IconRename size={13} /><span>Rename</span>
+            </div>
+            <div className="context-menu-item" onClick={() => execCtx('copy')}>
+              <IconCopy size={13} /><span>Copy</span>
+            </div>
+          </>}
           {contextMenu.node.remote && onRemoteCopy && (
             <div className="context-menu-item" onClick={() => execCtx('remote-copy')}>
               <IconDownload size={13} /><span>Copy to Local</span>
@@ -381,10 +384,12 @@ export default function FileExplorer({ rootPath, tree, onFileOpen, onRefresh, re
               <IconFileCode size={13} /><span>Open in Split</span>
             </div>
           )}
-          <div className="context-menu-separator" />
-          <div className="context-menu-item danger" onClick={() => execCtx('delete')}>
-            <IconDelete size={13} /><span>Delete</span>
-          </div>
+          {!contextMenu.node.remote && <>
+            <div className="context-menu-separator" />
+            <div className="context-menu-item danger" onClick={() => execCtx('delete')}>
+              <IconDelete size={13} /><span>Delete</span>
+            </div>
+          </>}
         </div>
       )}
     </div>

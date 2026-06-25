@@ -157,6 +157,12 @@ export default function App() {
   }, [openFileSplit])
 
   const handleSave = useCallback(async (path: string, content: string) => {
+    const file = useAppStore.getState().openedFiles.find(f => f.path === path)
+      ?? useAppStore.getState().splitFiles.find(f => f.path === path)
+    if (file?.remote) {
+      addToast('Read-only: ficheiro do host', 'warning')
+      return
+    }
     await window.api.writeFile(path, content)
     markFileSaved(path)
     logEvent('file saved', { file: path })

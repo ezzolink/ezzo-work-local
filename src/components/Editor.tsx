@@ -487,6 +487,8 @@ export default function Editor({ openedFiles, activeFile, onActivate, onClose, o
   const handleSave = useCallback((path: string, content: string) => onSave(path, content), [onSave])
 
   const handleSplitSave = useCallback(async (path: string, content: string) => {
+    const file = useAppStore.getState().splitFiles.find(f => f.path === path)
+    if (file?.remote) return
     await window.api.writeFile(path, content)
     markFileSaved(path)
   }, [markFileSaved])

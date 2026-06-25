@@ -83,10 +83,10 @@ export const useAppStore = create<AppState>((set) => ({
   updateFileContent: (path, content) =>
     set((s) => ({
       openedFiles: s.openedFiles.map((f) =>
-        f.path === path ? { ...f, content, modified: true } : f,
+        f.path === path ? { ...f, content, modified: f.remote ? false : true } : f,
       ),
       splitFiles: s.splitFiles.map((f) =>
-        f.path === path ? { ...f, content, modified: true } : f,
+        f.path === path ? { ...f, content, modified: f.remote ? false : true } : f,
       ),
     })),
 
